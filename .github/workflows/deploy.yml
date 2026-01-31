@@ -1,37 +1,52 @@
-name: Deploy Website
+name: Deploy static content to Pages
 
 on:
   push:
-    branches:
-      - main  # mainにPushされたらスタート
+    branches: ["main"] # mainにPushされたら開始
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  # 1. テスト環境（gh-pagesブランチの /test フォルダ）にデプロイ
+  # 1. テスト環境へのデプロイ
   deploy-test:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}test/ # 確認用URLを表示
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Deploy to Test
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          branch: gh-pages      # デプロイ先ブランチ
-          folder: .             # リポジトリの全ファイルを送る
-          target-folder: test   # 公開URL/test/ の中に配置される
+          # index.htmlを「test」フォルダの中に入れた状態でパッケージング
+          path: '.'
+          destination: 'test' 
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
-  # 2. 本番環境（gh-pagesブランチのルート）にデプロイ
+  # 2. 本番環境へのデプロイ（ここで承認待ちにする）
   deploy-production:
-    needs: deploy-test         # テストデプロイが終わるまで待つ
-    environment: production     # ★ここでGitHub上の「承認」が必要になる
+    needs: deploy-test
+    environment: 
+      name: production # ★重要：Settingsで作る環境名
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Deploy to Production
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          branch: gh-pages
-          folder: .
-          # target-folderを指定しないので、ルート直下に配置（本番反映）
+          path: '.' # ルート直下に配置（本番）
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
