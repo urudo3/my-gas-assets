@@ -15,22 +15,21 @@ jobs:
   # --------------------------------------------------
   deploy-test:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages # 承認なしで即反映される環境
+    # ※ environment: github-pages を消すか、Settings側で承認設定がないことを確認
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Prepare Test Directory
         run: |
-          mkdir out
-          cp index.html out/
-          # 他にファイルがあればここで out/ にコピー
+          mkdir public       # 公開用の親フォルダを作る
+          mkdir public/test  # その中に test フォルダを作る
+          cp index.html public/test/ # testの中にファイルをコピー
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'out' # outフォルダの中身をアップロード
+          path: 'public'  # testフォルダが入っている「public」ごと送る
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
@@ -42,7 +41,7 @@ jobs:
     needs: deploy-test
     runs-on: ubuntu-latest
     environment:
-      name: production # ★Settingsで「承認」をつけた環境名
+      name: production # ★Settingsで承認設定をした環境
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,7 +49,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.' # ルート直下（outを通さない）をアップロード
+          path: '.' # ここは「test」を通さないのでルート（本番）が更新される
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
