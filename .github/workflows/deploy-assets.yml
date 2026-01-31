@@ -1,0 +1,26 @@
+name: Deploy Pages
+
+on:
+  push:
+    branches: ["main"] # test側からファイルが届いた（Pushされた）時に起動
+  workflow_dispatch:   # 手動でボタンを押して動かすことも可能にする
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
