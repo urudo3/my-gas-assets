@@ -1,0 +1,47 @@
+name: GAS Style Multi-Repo Deploy
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  # --------------------------------------------------
+  # 1. テスト環境へ自動転送 (my-gas-test へ)
+  # --------------------------------------------------
+  deploy-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Push to Test Repo
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          token: ${{ secrets.MY_PAT }} # 先ほど登録した合鍵
+          repository-name: urudo3/my-gas-test # 送り先のテストリポジトリ
+          branch: main
+          folder: . # 今あるファイルを丸ごと送る
+
+  # --------------------------------------------------
+  # 2. 本番環境へデプロイ (my-gas-assets 自身へ)
+  # --------------------------------------------------
+  deploy-production:
+    needs: deploy-test
+    runs-on: ubuntu-latest
+    environment:
+      name: production # ★ここで「承認ボタン」が出る設定
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Upload and Deploy Production
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
