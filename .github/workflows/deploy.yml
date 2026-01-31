@@ -1,8 +1,8 @@
-name: Deploy static content to Pages
+name: Deploy Website
 
 on:
   push:
-    branches: ["main"] # mainにPushされたら開始
+    branches: ["main"]
 
 permissions:
   contents: read
@@ -10,43 +10,47 @@ permissions:
   id-token: write
 
 jobs:
-  # 1. テスト環境へのデプロイ
+  # --------------------------------------------------
+  # 1. テスト環境デプロイ (URL: .../test/index.html)
+  # --------------------------------------------------
   deploy-test:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}test/ # 確認用URLを表示
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages # 承認なしで即反映される環境
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+
+      - name: Prepare Test Directory
+        run: |
+          mkdir out
+          cp index.html out/
+          # 他にファイルがあればここで out/ にコピー
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # index.htmlを「test」フォルダの中に入れた状態でパッケージング
-          path: '.'
-          destination: 'test' 
+          path: 'out' # outフォルダの中身をアップロード
+
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v4
 
-  # 2. 本番環境へのデプロイ（ここで承認待ちにする）
+  # --------------------------------------------------
+  # 2. 本番環境デプロイ (URL: .../index.html)
+  # --------------------------------------------------
   deploy-production:
     needs: deploy-test
-    environment: 
-      name: production # ★重要：Settingsで作る環境名
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    environment:
+      name: production # ★Settingsで「承認」をつけた環境名
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.' # ルート直下に配置（本番）
+          path: '.' # ルート直下（outを通さない）をアップロード
+
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v4
